@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Git Commit Interactive Simulator</title>
+<style>
+  body {
+    font-family: sans-serif;
+    display: flex;
+    height: 100vh;
+    margin: 0;
+    background-color: #1e1e1e;
+    color: #fff;
+  }
+  #terminal-container {
+    flex: 2;
+    background-color: #121212;
+    padding: 20px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 16px;
+    overflow-y: auto;
+    position: relative;
+  }
+  #guide-container {
+    flex: 1;
+    background-color: #252526;
+    padding: 30px;
+    border-left: 2px solid #333;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .prompt { color: #4af626; }
+  .command-input {
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 16px;
+    outline: none;
+    width: 70%;
+  }
+  .output { color: #ccc; margin-bottom: 10px; white-space: pre-wrap; }
+  
+  /* Vim Styles */
+  #vim-ui {
+    display: none;
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #121212;
+    padding: 20px;
+    flex-direction: column;
+  }
+  #vim-text {
+    flex-grow: 1;
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 16px;
+    outline: none;
+    resize: none;
+  }
+  #vim-status-bar {
+    display: flex;
+    justify-content: space-between;
+    height: 20px;
+    font-weight: bold;
+  }
+  #vim-mode { color: #4af626; }
+  #vim-command { color: #fff; }
+
+  /* Guide Styles */
+  .popup-card {
+    background: #333;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  }
+  .popup-card h2 { margin-top: 0; color: #4af626; }
+  .highlight { color: #ffca28; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<div id="terminal-container">
+  <div id="history">
+    <div class="output">Git repository initialized. Files are staged and ready to commit.</div>
+  </div>
+  <div id="input-line">
+    <span class="prompt">user@machine:~/my-project$</span>
+    <input type="text" id="cmd" class="command-input" autocomplete="off" autofocus>
+  </div>
+
+  <div id="vim-ui">
+    <textarea id="vim-text" readonly>
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+# On branch main
+# Changes to be committed:
+#   modified:   index.html</textarea>
+    <div id="vim-status-bar">
+      <span id="vim-mode">"~/my-project/.git/COMMIT_EDITMSG"</span>
+      <span id="vim-command"></span>
+    </div>
+  </div>
+</div>
+
+<div id="guide-container">
+  <div class="popup-card" id="guide-card">
+    <h2>Welcome to the Simulator</h2>
+    <p>Let's try the quick way first.</p>
+    <p>Type the following in the terminal and hit Enter:</p>
+    <p class="highlight">git commit -m "Initial commit"</p>
+  </div>
+</div>
+
+<script>
+  const cmdInput = document.getElementById('cmd');
+  const historyDiv = document.getElementById('history');
+  const guideCard = document.getElementById('guide-card');
+  const vimUI = document.getElementById('vim-ui');
+  const inputLine = document.getElementById('input-line');
+  const vimText = document.getElementById('vim-text');
+  const vimMode = document.getElementById('vim-mode');
+  const vimCommand = document.getElementById('vim-command');
+
+  let state = 'terminal'; // terminal, vim-normal, vim-insert, vim-command
+  let vimCmdString = '';
+
+  cmdInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      const val = this.value.trim();
+      printLine(`<span class="prompt">user@machine:~/my-project$</span> ${val}`);
+      this.value = '';
+
+      if (val.startsWith('git commit -m')) {
+        printLine('[main 1a2b3c4] ' + val.substring(14).replace(/['"]/g, ''));
+        printLine('1 file changed, 10 insertions(+)');
+        updateGuide('Awesome!', 'You used the <code>-m</code> flag. Git bypassed the text editor completely.<br><br>Now let\'s try the detailed way. Type:<br><br><span class="highlight">git commit</span>');
+      } else if (val === 'git commit') {
+        enterVim();
+      } else {
+        printLine(`Command not found or recognized in this simulator: ${val}`);
+      }
+    }
+  });
+
+  function printLine(html) {
+    const div = document.createElement('div');
+    div.className = 'output';
+    div.innerHTML = html;
+    historyDiv.appendChild(div);
+    historyDiv.scrollTop = historyDiv.scrollHeight;
+  }
+
+  function enterVim() {
+    state = 'vim-normal';
+    inputLine.style.display = 'none';
+    vimUI.style.display = 'flex';
+    updateGuide('🛑 Vim: Normal Mode', 'Git has opened Vim! Right now, you cannot type text normally.<br><br>Press the <span class="highlight">i</span> key on your keyboard to enter <strong>Insert Mode</strong>.');
+    
+    // Listen for Vim keys globally
+    document.addEventListener('keydown', vimKeyListener);
+  }
+
+  function vimKeyListener(e) {
+    if (state === 'vim-normal') {
+      if (e.key === 'i') {
+        e.preventDefault();
+        state = 'vim-insert';
+        vimMode.innerText = '-- INSERT --';
+        vimText.removeAttribute('readonly');
+        vimText.focus();
+        vimText.setSelectionRange(0, 0); // Put cursor at top
+        updateGuide('🟢 Vim: Insert Mode', 'Great! See the <code>-- INSERT --</code> at the bottom? You can now type your commit message.<br><br>Type a message at the top, then press the <span class="highlight">Escape (Esc)</span> key when you are done.');
+      }
+      if (e.key === ':') {
+        e.preventDefault();
+        state = 'vim-command';
+        vimCmdString = ':';
+        vimCommand.innerText = vimCmdString;
+        updateGuide('🟡 Vim: Command Mode', 'You are in command mode. Type <span class="highlight">wq</span> and press <strong>Enter</strong> to Write (save) and Quit.');
+      }
+    } else if (state === 'vim-insert') {
+      if (e.key === 'Escape') {
+        state = 'vim-normal';
+        vimMode.innerText = '';
+        vimText.setAttribute('readonly', 'true');
+        updateGuide('🟡 Vim: Back to Normal', 'You left Insert Mode. Now you need to save and quit.<br><br>Type <span class="highlight">:wq</span> (colon, w, q) and press <strong>Enter</strong>.');
+      }
+    } else if (state === 'vim-command') {
+      if (e.key === 'Enter') {
+        if (vimCmdString === ':wq') {
+          exitVim();
+        } else {
+          vimCmdString = ':';
+          vimCommand.innerText = 'E492: Not an editor command';
+          setTimeout(() => { vimCommand.innerText = ''; state = 'vim-normal'; }, 1000);
+        }
+      } else if (e.key === 'Backspace') {
+        vimCmdString = vimCmdString.slice(0, -1);
+        vimCommand.innerText = vimCmdString;
+        if (vimCmdString === '') state = 'vim-normal';
+      } else if (e.key.length === 1) {
+        vimCmdString += e.key;
+        vimCommand.innerText = vimCmdString;
+      }
+    }
+  }
+
+  function exitVim() {
+    document.removeEventListener('keydown', vimKeyListener);
+    state = 'terminal';
+    vimUI.style.display = 'none';
+    inputLine.style.display = 'block';
+    cmdInput.focus();
+    
+    // Extract first line of commit message
+    const firstLine = vimText.value.split('\n')[0];
+    const commitMsg = firstLine.trim() !== '' ? firstLine : 'Empty message';
+    
+    printLine(`[main 9d8e7f6] ${commitMsg}`);
+    printLine('1 file changed, 10 insertions(+)');
+    updateGuide('🎉 Success!', 'You successfully navigated Vim and made a commit. <br><br>Refresh the page to try again!');
+  }
+
+  function updateGuide(title, body) {
+    guideCard.innerHTML = `<h2>${title}</h2><p>${body}</p>`;
+  }
+</script>
+
+</body>
+</html>
