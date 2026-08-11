@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Git Log Interactive Simulator</title>
+<style>
+  body {
+    font-family: sans-serif;
+    display: flex;
+    height: 100vh;
+    margin: 0;
+    background-color: #1e1e1e;
+    color: #fff;
+  }
+  #terminal-container {
+    flex: 2;
+    background-color: #121212;
+    padding: 20px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 16px;
+    overflow-y: auto;
+    position: relative;
+  }
+  #guide-container {
+    flex: 1;
+    background-color: #252526;
+    padding: 30px;
+    border-left: 2px solid #333;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .prompt { color: #4af626; }
+  .command-input {
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 16px;
+    outline: none;
+    width: 70%;
+  }
+  .output { color: #ccc; margin-bottom: 10px; white-space: pre-wrap; line-height: 1.4; }
+  .commit-hash { color: #e5e510; } /* Standard yellow for git commit hashes */
+  
+  /* Guide Styles */
+  .popup-card {
+    background: #333;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  }
+  .popup-card h2 { margin-top: 0; color: #4af626; }
+  .highlight { color: #ffca28; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<div id="terminal-container">
+  <div id="history">
+    <div class="output">Repository loaded. 3 commits found in history.</div>
+  </div>
+  <div id="input-line">
+    <span class="prompt">user@machine:~/my-project$</span>
+    <input type="text" id="cmd" class="command-input" autocomplete="off" autofocus>
+  </div>
+</div>
+
+<div id="guide-container">
+  <div class="popup-card" id="guide-card">
+    <h2>Viewing Git History</h2>
+    <p>Let's look at the detailed history of this repository first.</p>
+    <p>Type the following in the terminal and hit Enter:</p>
+    <p class="highlight">git log</p>
+  </div>
+</div>
+
+<script>
+  const cmdInput = document.getElementById('cmd');
+  const historyDiv = document.getElementById('history');
+  const guideCard = document.getElementById('guide-card');
+  const terminalContainer = document.getElementById('terminal-container');
+
+  // Simulated commit database
+  const commits = [
+    {
+      hash: "9c4b2a1f4e2d3c8b7a6958473625140f9e8d7c6b",
+      shortHash: "9c4b2a1",
+      author: "Ada Lovelace <ada@example.com>",
+      date: "Fri Mar 13 10:45:12 2026 -0400",
+      message: "Refactor login component and update documentation\n\n- Extracted the authentication logic into a separate hook.\n- Updated the README with the new setup instructions."
+    },
+    {
+      hash: "7f8a9b2e1d0c9b8a7f6e5d4c3b2a1f0e9d8c7b6a",
+      shortHash: "7f8a9b2",
+      author: "Ada Lovelace <ada@example.com>",
+      date: "Thu Mar 12 15:30:00 2026 -0400",
+      message: "Update login button color to blue"
+    },
+    {
+      hash: "1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t",
+      shortHash: "1a2b3c4",
+      author: "Ada Lovelace <ada@example.com>",
+      date: "Wed Mar 11 09:15:00 2026 -0400",
+      message: "Initial commit"
+    }
+  ];
+
+  let hasSeenFullLog = false;
+
+  cmdInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      const val = this.value.trim();
+      printLine(`<span class="prompt">user@machine:~/my-project$</span> ${val}`);
+      this.value = '';
+
+      if (val === 'git log') {
+        renderFullLog();
+        hasSeenFullLog = true;
+        updateGuide('The Detailed View', 'Git prints the full 40-character SHA-1 hash, the author, the date, and the complete multi-line commit message.<br><br>This is great for details, but can get cluttered.<br><br>Now try typing:<br><span class="highlight">git log --oneline</span>');
+      } else if (val === 'git log --oneline') {
+        renderOneLineLog();
+        if (hasSeenFullLog) {
+          updateGuide('🎉 The Compact View', 'Awesome! Notice how much cleaner this is?<br><br>Git condenses the hash to 7 characters and only shows the first line (the subject) of your commit message.<br><br>This is the best way to get a quick bird\'s-eye view of your repository history.');
+        } else {
+          updateGuide('The Compact View', 'You jumped straight to the condensed view! Git shows a 7-character short hash and just the first line of the message.<br><br>Try typing <span class="highlight">git log</span> to see the verbose version.');
+        }
+      } else if (val === 'clear') {
+        historyDiv.innerHTML = '';
+      } else if (val !== '') {
+        printLine(`bash: ${val}: command not found\n(Hint: Try 'git log' or 'git log --oneline')`);
+      }
+      
+      scrollToBottom();
+    }
+  });
+
+  function printLine(html) {
+    const div = document.createElement('div');
+    div.className = 'output';
+    div.innerHTML = html;
+    historyDiv.appendChild(div);
+  }
+
+  function renderFullLog() {
+    let outputStr = '';
+    commits.forEach(commit => {
+      // Indent message lines by 4 spaces per Git default behavior
+      const indentedMessage = commit.message.split('\n').map(line => '    ' + line).join('\n');
+      outputStr += `<span class="commit-hash">commit ${commit.hash}</span>\nAuthor: ${commit.author}\nDate:   ${commit.date}\n\n${indentedMessage}\n\n`;
+    });
+    printLine(outputStr.trimEnd());
+  }
+
+  function renderOneLineLog() {
+    let outputStr = '';
+    commits.forEach(commit => {
+      const firstLineOfMessage = commit.message.split('\n')[0];
+      outputStr += `<span class="commit-hash">${commit.shortHash}</span> ${firstLineOfMessage}\n`;
+    });
+    printLine(outputStr.trimEnd());
+  }
+
+  function updateGuide(title, body) {
+    guideCard.innerHTML = `<h2>${title}</h2><p>${body}</p>`;
+  }
+
+  function scrollToBottom() {
+    terminalContainer.scrollTop = terminalContainer.scrollHeight;
+  }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Git Amend Interactive Simulator</title>
+<style>
+  body {
+    font-family: sans-serif;
+    display: flex;
+    height: 100vh;
+    margin: 0;
+    background-color: #1e1e1e;
+    color: #fff;
+  }
+  #terminal-container {
+    flex: 2;
+    background-color: #121212;
+    padding: 20px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 16px;
+    overflow-y: auto;
+    position: relative;
+  }
+  #guide-container {
+    flex: 1;
+    background-color: #252526;
+    padding: 30px;
+    border-left: 2px solid #333;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .prompt { color: #4af626; }
+  .command-input {
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 16px;
+    outline: none;
+    width: 70%;
+  }
+  .output { color: #ccc; margin-bottom: 10px; white-space: pre-wrap; line-height: 1.4; }
+  .commit-hash { color: #e5e510; }
+  
+  .popup-card {
+    background: #333;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  }
+  .popup-card h2 { margin-top: 0; color: #4af626; }
+  .highlight { color: #ffca28; font-weight: bold; }
+  .danger { color: #ff5252; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<div id="terminal-container">
+  <div id="history">
+    <div class="output">Repository loaded. You just made a commit, but something is wrong...</div>
+  </div>
+  <div id="input-line">
+    <span class="prompt">user@machine:~/my-project$</span>
+    <input type="text" id="cmd" class="command-input" autocomplete="off" autofocus>
+  </div>
+</div>
+
+<div id="guide-container">
+  <div class="popup-card" id="guide-card">
+    <h2>Step 1: Spot the Mistake</h2>
+    <p>Let's look at your recent commits to see what went wrong.</p>
+    <p>Type the following in the terminal and hit Enter:</p>
+    <p class="highlight">git log --oneline</p>
+  </div>
+</div>
+
+<script>
+  const cmdInput = document.getElementById('cmd');
+  const historyDiv = document.getElementById('history');
+  const guideCard = document.getElementById('guide-card');
+  const terminalContainer = document.getElementById('terminal-container');
+
+  // Our repository state
+  let commits = [
+    {
+      hash: "7f8a9b2e1d0c9b8a7f6e5d4c3b2a1f0e9d8c7b6a",
+      shortHash: "7f8a9b2",
+      message: "Addd new logn feture and stuf" // The intentional typo
+    },
+    {
+      hash: "1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t",
+      shortHash: "1a2b3c4",
+      message: "Initial commit"
+    }
+  ];
+
+  let step = 1;
+
+  cmdInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      const val = this.value.trim();
+      printLine(`<span class="prompt">user@machine:~/my-project$</span> ${val}`);
+      this.value = '';
+
+      if (val === 'git log --oneline' || val === 'git log') {
+        renderLog(val === 'git log --oneline');
+        
+        if (step === 1) {
+          updateGuide('Step 2: Fix the Typo', 'Yikes. Look at that top commit message: <span class="danger">"Addd new logn feture and stuf"</span>.<br><br>Let\'s fix it without creating a brand new commit. Type:<br><br><span class="highlight">git commit --amend -m "Add login feature"</span>');
+          step = 2;
+        } else if (step === 3) {
+          updateGuide('🎉 History Rewritten!', 'Look closely at the top commit!<br><br>The message is fixed, but notice the <span class="highlight">commit hash changed</span> (it is no longer 7f8a9b2).<br><br>Because you amended it, Git destroyed the old commit and replaced it with a brand new one.');
+        }
+
+      } else if (val.startsWith('git commit --amend -m')) {
+        // Extract the new message (handling quotes)
+        const match = val.match(/-m\s+["'](.+)["']/);
+        const newMessage = match ? match[1] : "Updated commit message";
+
+        // Generate a "new" hash to simulate rewriting history
+        const newShortHash = "c4d3e2f";
+        const newFullHash = "c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b7c6d5";
+
+        // Replace the top commit
+        commits[0] = {
+          hash: newFullHash,
+          shortHash: newShortHash,
+          message: newMessage
+        };
+
+        printLine(`[main ${newShortHash}] ${newMessage}\n Date: Fri Mar 13 11:30:00 2026 -0400\n 1 file changed, 15 insertions(+)`);
+        
+        if (step === 2) {
+          updateGuide('Step 3: Verify the Change', 'Great! The amend was successful.<br><br>Now, let\'s look at the history one more time to see what actually happened under the hood. Type:<br><br><span class="highlight">git log --oneline</span>');
+          step = 3;
+        }
+
+      } else if (val === 'clear') {
+        historyDiv.innerHTML = '';
+      } else if (val !== '') {
+        printLine(`bash: ${val}: command not found\n(Hint: Follow the guide on the right!)`);
+      }
+      
+      scrollToBottom();
+    }
+  });
+
+  function printLine(html) {
+    const div = document.createElement('div');
+    div.className = 'output';
+    div.innerHTML = html;
+    historyDiv.appendChild(div);
+  }
+
+  function renderLog(isOneLine) {
+    let outputStr = '';
+    commits.forEach(commit => {
+      if (isOneLine) {
+        outputStr += `<span class="commit-hash">${commit.shortHash}</span> ${commit.message}\n`;
+      } else {
+        outputStr += `<span class="commit-hash">commit ${commit.hash}</span>\nAuthor: You <you@example.com>\nDate:   Fri Mar 13 11:30:00 2026 -0400\n\n    ${commit.message}\n\n`;
+      }
+    });
+    printLine(outputStr.trimEnd());
+  }
+
+  function updateGuide(title, body) {
+    guideCard.innerHTML = `<h2>${title}</h2><p>${body}</p>`;
+  }
+
+  function scrollToBottom() {
+    terminalContainer.scrollTop = terminalContainer.scrollHeight;
+  }
+</script>
+
+</body>
+</html>
