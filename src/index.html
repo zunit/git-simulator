@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Git Simulator Hub</title>
+<style>
+  :root {
+    --sidebar-w: 260px;
+    --text-primary: #222;
+    --text-secondary: #666;
+    --text-muted: #999;
+    --border-color: #ddd;
+    --hover-bg: #f5f5ff;
+    --badge-text: #966;
+    --badge-border: #ecd;
+    --note-text: #a60;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+  }
+
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text-primary);
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: var(--sidebar-w) 1fr;
+    height: 100vh;
+    gap: 0;
+  }
+
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border-color);
+    background: #fafafa;
+    overflow-y: auto;
+  }
+
+  .sidebar-title {
+    padding: 1rem;
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  #nav-root {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.5rem 0;
+  }
+
+  .nav-group-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin: 1rem 1rem 0.5rem;
+    font-weight: 600;
+  }
+
+  .nav-group-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .nav-item {
+    margin: 0;
+  }
+
+  .nav-link {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    margin: 0 0.5rem;
+    border-radius: 6px;
+    text-decoration: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+
+  .nav-link:hover {
+    background-color: var(--hover-bg);
+  }
+
+  .nav-link.active {
+    background-color: #e8e8ff;
+    font-weight: 600;
+  }
+
+  .nav-label {
+    flex: 1;
+    min-width: 0;
+    word-break: break-word;
+  }
+
+  .badge {
+    display: inline-flex;
+    color: var(--badge-text);
+    cursor: help;
+    flex-shrink: 0;
+  }
+
+  .badge svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .nav-note {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--note-text);
+    padding: 0.25rem 0.75rem 0;
+    margin-top: -0.25rem;
+    font-weight: normal;
+  }
+
+  .sidebar-footer {
+    padding: 1rem;
+    border-top: 1px solid var(--border-color);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+  }
+
+  .content {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .content-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+    background: #fafafa;
+    flex-wrap: wrap;
+  }
+
+  .content-title {
+    font-weight: 600;
+    flex: 1;
+    min-width: 0;
+    word-break: break-word;
+  }
+
+  .open-tab-link {
+    color: #0066cc;
+    text-decoration: none;
+    font-size: 0.9rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    transition: background-color 0.15s ease;
+  }
+
+  .open-tab-link:hover {
+    background-color: #e8e8ff;
+  }
+
+  #viewer {
+    flex: 1;
+    border: none;
+    width: 100%;
+    background: #fff;
+  }
+
+  .hint {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--border-color);
+    background: #f5f5f5;
+    line-height: 1.4;
+  }
+
+  .hint code {
+    background: #f0f0f0;
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+    font-family: monospace;
+  }
+
+  /* Responsive: stack layout on narrow viewports */
+  @media (max-width: 700px) {
+    .layout {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr;
+    }
+
+    .sidebar {
+      max-height: 35vh;
+    }
+
+    .content-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .open-tab-link {
+      align-self: flex-start;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <nav class="sidebar">
+    <h1 class="sidebar-title">Git Simulator Hub</h1>
+    <div id="nav-root"></div>
+  </nav>
+
+  <main class="content">
+    <div class="content-header">
+      <div class="content-title" id="current-title">Select a simulator from the sidebar</div>
+      <a id="open-new-tab" href="#" target="_blank" rel="noopener" class="open-tab-link" style="display:none;">Open in new tab ↗</a>
+    </div>
+    <iframe id="viewer" title="Simulator viewer" src="about:blank"></iframe>
+    <div class="hint">
+      Nothing appearing after a few seconds? Some browsers restrict embedding local files in frames — click "Open in new tab" instead. For fully consistent behavior across browsers, you can optionally serve this folder with <code>cd src &amp;&amp; python3 -m http.server 8000</code> and browse via <code>http://localhost:8000/</code> instead of using the file:// URL.
+    </div>
+  </main>
+</div>
+
+<script>
+  const WIFI_ICON_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M5 12.55a11 11 0 0 1 14 0"/>
+    <path d="M8.5 16.05a6 6 0 0 1 7 0"/>
+    <line x1="12" y1="20" x2="12.01" y2="20"/>
+  </svg>`;
+
+  const NAV = [
+    {
+      group: "1 · Git Basics",
+      items: [
+        { file: "1_2-git-amend-simulator-overview.html", label: "Git Commit (Amend)", cdn: true },
+        { file: "1_3-git-log-simulation.html",            label: "Git Log",            cdn: false },
+        { file: "1_4-git-ignore-simulator.html",          label: "Git Ignore",         cdn: true },
+        { file: "1_5-git-stash-simulator.html",           label: "Git Stash",          cdn: true },
+        { file: "1_6-git-time-machine.html",              label: "Git Time Machine",   cdn: true },
+      ],
+    },
+    {
+      group: "2 · Git Intermediate",
+      items: [
+        {
+          file: "2_1-git-branching-simulator-non-wiz-staff.html",
+          label: "Git Branching",
+          cdn: true,
+        },
+        { file: "2_2-git-merging-simulator.html",             label: "Branch Merging",                 cdn: true },
+        { file: "2_3-git-diff-simulator.html",                label: "Git Diff & Comparing Branches",  cdn: true },
+        { file: "2_4-git-remote-mission.html",                label: "Git Remotes & Push",             cdn: true },
+        { file: "2_5-git-fetch-pull-remote-mission.html",     label: "Git Fetch & Pull",               cdn: true },
+        { file: "2_6-git-merge-conflict-mission.html",        label: "Remote Merge Conflict",          cdn: true },
+        {
+          file: "2_7-gitlab-merge-request-simulator-standalone.html",
+          label: "GitLab Merge Request (MR/PR)",
+          cdn: true,
+        },
+      ],
+    },
+  ];
+
+  const root = document.getElementById("nav-root");
+  const viewer = document.getElementById("viewer");
+  const titleEl = document.getElementById("current-title");
+  const openNewTab = document.getElementById("open-new-tab");
+
+  function selectFile(file, label) {
+    viewer.src = file;
+    titleEl.textContent = label;
+    openNewTab.href = file;
+    openNewTab.style.display = "inline";
+    document.querySelectorAll(".nav-link").forEach((a) =>
+      a.classList.toggle("active", a.dataset.file === file)
+    );
+    history.replaceState(null, "", "#" + encodeURIComponent(file));
+  }
+
+  // Render nav
+  NAV.forEach(({ group, items }) => {
+    const h2 = document.createElement("h2");
+    h2.className = "nav-group-title";
+    h2.textContent = group;
+    root.appendChild(h2);
+
+    const ul = document.createElement("ul");
+    ul.className = "nav-group-list";
+    root.appendChild(ul);
+
+    items.forEach((item) => {
+      const li = document.createElement("li");
+      li.className = "nav-item";
+
+      const a = document.createElement("a");
+      a.href = "#";
+      a.className = "nav-link";
+      a.dataset.file = item.file;
+
+      const label = document.createElement("span");
+      label.className = "nav-label";
+      label.textContent = item.label;
+      a.appendChild(label);
+
+      if (item.cdn) {
+        const badge = document.createElement("span");
+        badge.className = "badge";
+        badge.innerHTML = WIFI_ICON_SVG;
+        badge.title = "Needs internet";
+        a.appendChild(badge);
+      }
+
+      a.addEventListener("click", (e) => {
+        e.preventDefault();
+        selectFile(item.file, item.label);
+      });
+
+      li.appendChild(a);
+
+      if (item.note) {
+        const note = document.createElement("span");
+        note.className = "nav-note";
+        note.textContent = item.note;
+        li.appendChild(note);
+      }
+
+      ul.appendChild(li);
+    });
+  });
+
+  // Fill footer badge with the same SVG icon
+  const footerBadge = document.querySelector('.sidebar-footer .badge');
+  if (footerBadge) {
+    footerBadge.innerHTML = WIFI_ICON_SVG;
+  }
+
+  // Deep-link support: restore selection from hash on load
+  const initial = decodeURIComponent(location.hash.slice(1));
+  const match = NAV.flatMap((g) => g.items).find((i) => i.file === initial);
+  if (match) {
+    selectFile(match.file, match.label);
+  }
+</script>
+
+</body>
+</html>
