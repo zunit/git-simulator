@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//private/tmp/**)",
+      "Bash(python3)",
+      "Bash(mkdir -p /private/tmp/claude-501/-Users-jianan-Desktop-QuickCode-devops-git-git-simulator/fa5ba7fe-5b59-43c8-a7a3-7e76c9982b1f/scratchpad)",
+      "Bash(python3 /private/tmp/claude-501/-Users-jianan-Desktop-QuickCode-devops-git-git-simulator/fa5ba7fe-5b59-43c8-a7a3-7e76c9982b1f/scratchpad/extract.py)",
+      "Bash(grep -oE 'background\\(-color\\)?:\\\\s*#[0-9a-fA-F]{3,6}' /private/tmp/claude-501/-Users-jianan-Desktop-QuickCode-devops-git-git-simulator/fa5ba7fe-5b59-43c8-a7a3-7e76c9982b1f/scratchpad/2_5-git-fetch-pull-remote-mission.blocks.txt)",
+      "Bash(python3 /private/tmp/claude-501/-Users-jianan-Desktop-QuickCode-devops-git-git-simulator/fa5ba7fe-5b59-43c8-a7a3-7e76c9982b1f/scratchpad/verify_snippet.py)",
+      "Bash(python3 /private/tmp/claude-501/-Users-jianan-Desktop-QuickCode-devops-git-git-simulator/fa5ba7fe-5b59-43c8-a7a3-7e76c9982b1f/scratchpad/final_verify.py)",
+      "Bash(git restore *)",
+      "Bash(python3 /private/tmp/claude-501/-Users-jianan-Desktop-QuickCode-devops-git-git-simulator/fa5ba7fe-5b59-43c8-a7a3-7e76c9982b1f/scratchpad/fix_colors_final.py)",
+      "Bash(python3 /private/tmp/claude-501/-Users-jianan-Desktop-QuickCode-devops-git-git-simulator/fa5ba7fe-5b59-43c8-a7a3-7e76c9982b1f/scratchpad/verify_final.py)",
+      "Bash(python3 /private/tmp/claude-501/-Users-jianan-Desktop-QuickCode-devops-git-git-simulator/fa5ba7fe-5b59-43c8-a7a3-7e76c9982b1f/scratchpad/fix_colors_v4.py)",
+      "Bash(python3 /private/tmp/claude-501/-Users-jianan-Desktop-QuickCode-devops-git-git-simulator/fa5ba7fe-5b59-43c8-a7a3-7e76c9982b1f/scratchpad/verify_clean.py)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
+    ]
+  }
+}
