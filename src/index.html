@@ -310,7 +310,7 @@
           <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
         </svg>
       </button>
-      <button id="theme-toggle" class="icon-toggle" aria-pressed="false" aria-label="Toggle dark mode">
+      <button id="theme-toggle" class="icon-toggle" aria-pressed="true" aria-label="Toggle dark mode">
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
         </svg>
@@ -332,8 +332,14 @@
 
   // Restore theme state before render to avoid flash
   const html = document.documentElement;
-  const savedTheme = localStorage.getItem('git-sim-theme') || 'light';
+  const savedTheme = localStorage.getItem('git-sim-theme') || 'dark';
   html.dataset.theme = savedTheme;
+
+  // Sync toggle button aria-pressed to match restored theme
+  const themeToggleBtn = document.getElementById('theme-toggle');
+  if (themeToggleBtn) {
+    themeToggleBtn.setAttribute('aria-pressed', savedTheme === 'dark');
+  }
 
   const WIFI_ICON_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     <path d="M5 12.55a11 11 0 0 1 14 0"/>
