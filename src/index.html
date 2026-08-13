@@ -39,6 +39,16 @@
     grid-template-columns: var(--sidebar-w) 1fr;
     height: 100vh;
     gap: 0;
+    transition: grid-template-columns 0.25s ease, grid-template-rows 0.25s ease;
+  }
+
+  .layout.sidebar-collapsed {
+    grid-template-columns: 0 1fr;
+  }
+
+  .layout.sidebar-collapsed .sidebar {
+    overflow: hidden;
+    border-right: none;
   }
 
   .sidebar {
@@ -209,6 +219,14 @@
       grid-template-rows: auto 1fr;
     }
 
+    .layout.sidebar-collapsed {
+      grid-template-rows: 0 1fr;
+    }
+
+    .layout.sidebar-collapsed .sidebar {
+      border-bottom: none;
+    }
+
     .sidebar {
       max-height: 35vh;
     }
@@ -222,6 +240,29 @@
       align-self: flex-start;
     }
   }
+
+  .sidebar-toggle {
+    background: none;
+    border: none;
+    padding: 0.5rem;
+    cursor: pointer;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 1rem;
+    border-radius: 4px;
+    transition: background-color 0.15s ease;
+  }
+
+  .sidebar-toggle:hover {
+    background-color: var(--hover-bg);
+  }
+
+  .sidebar-toggle svg {
+    width: 20px;
+    height: 20px;
+  }
 </style>
 </head>
 <body>
@@ -234,17 +275,26 @@
 
   <main class="content">
     <div class="content-header">
+      <button id="sidebar-toggle" class="sidebar-toggle" aria-expanded="true" aria-label="Toggle sidebar">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+        </svg>
+      </button>
       <div class="content-title" id="current-title">Select a simulator from the sidebar</div>
       <a id="open-new-tab" href="#" target="_blank" rel="noopener" class="open-tab-link" style="display:none;">Open in new tab ↗</a>
     </div>
     <iframe id="viewer" title="Simulator viewer" src="about:blank"></iframe>
-    <div class="hint">
-      Nothing appearing after a few seconds? Some browsers restrict embedding local files in frames — click "Open in new tab" instead. For fully consistent behavior across browsers, you can optionally serve this folder with <code>cd src &amp;&amp; python3 -m http.server 8000</code> and browse via <code>http://localhost:8000/</code> instead of using the file:// URL.
-    </div>
   </main>
 </div>
 
 <script>
+  // Restore sidebar state before render to avoid flash
+  const layout = document.querySelector('.layout');
+  const isCollapsed = localStorage.getItem('git-sim-sidebar-collapsed') === 'true';
+  if (isCollapsed) {
+    layout.classList.add('sidebar-collapsed');
+  }
+
   const WIFI_ICON_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     <path d="M5 12.55a11 11 0 0 1 14 0"/>
     <path d="M8.5 16.05a6 6 0 0 1 7 0"/>
@@ -288,6 +338,14 @@
   const viewer = document.getElementById("viewer");
   const titleEl = document.getElementById("current-title");
   const openNewTab = document.getElementById("open-new-tab");
+  const sidebarToggle = document.getElementById("sidebar-toggle");
+
+  sidebarToggle.addEventListener("click", () => {
+    layout.classList.toggle("sidebar-collapsed");
+    const isNowCollapsed = layout.classList.contains("sidebar-collapsed");
+    localStorage.setItem("git-sim-sidebar-collapsed", isNowCollapsed);
+    sidebarToggle.setAttribute("aria-expanded", !isNowCollapsed);
+  });
 
   function selectFile(file, label) {
     viewer.src = file;
