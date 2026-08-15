@@ -53,6 +53,8 @@
     margin: 0;
     padding: 0;
     height: 100%;
+    /* The shell is exactly viewport-sized; only the iframe and the nav list scroll. */
+    overflow: hidden;
   }
 
   body {
@@ -72,8 +74,12 @@
     padding: 0.75rem 1rem;
     border-bottom: 1px solid var(--border-color);
     background: var(--surface-bg);
+    /* Keep in sync with .layout grid-template-rows */
     height: 56px;
     flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
     transition: background-color 0.25s ease;
   }
 
@@ -120,9 +126,12 @@
 
   .layout {
     display: grid;
+    /* Row 1 must match .top-bar height */
     grid-template-rows: 56px 1fr;
     grid-template-columns: 1fr;
     height: 100vh;
+    /* dvh tracks the collapsing mobile toolbar; vh above is the fallback */
+    height: 100dvh;
     gap: 0;
     transition: grid-template-rows 0.25s ease;
   }
@@ -132,7 +141,9 @@
     grid-template-columns: var(--sidebar-w) 1fr;
     height: 100%;
     gap: 0;
-    transition: grid-template-columns 0.25s ease;
+    /* Deliberately NOT transitioning grid-template-columns: animating it resizes the
+       viewer iframe on every frame for 250ms, re-laying out the simulator inside it
+       ~15 times per toggle. Collapse discretely instead. */
   }
 
   .layout.sidebar-collapsed .layout-content-area {
@@ -149,7 +160,8 @@
     flex-direction: column;
     border-right: 1px solid var(--border-color);
     background: var(--surface-bg);
-    overflow-y: auto;
+    /* #nav-root is the single scroller here — don't nest a second one */
+    overflow: hidden;
     transition: background-color 0.25s ease;
   }
 
@@ -244,7 +256,9 @@
   .content {
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    /* 100% of the grid track, not 100vh — the track is already 100vh minus the top bar */
+    height: 100%;
+    min-height: 0;
     overflow: hidden;
   }
 
@@ -271,6 +285,8 @@
 
   #viewer {
     flex: 1;
+    /* An iframe is a replaced element; without this its min size is its intrinsic 150px */
+    min-height: 0;
     border: none;
     width: 100%;
     background: var(--content-bg);
@@ -364,6 +380,7 @@
 
     .sidebar {
       max-height: 35vh;
+      max-height: 35dvh;
       border-right: none;
       border-bottom: 1px solid var(--border-color);
     }
@@ -536,11 +553,25 @@
   const sidebarToggle = document.getElementById("sidebar-toggle");
   const themeToggle = document.getElementById("theme-toggle");
 
+  // The viewer iframe changes width when the sidebar collapses. Force the frame to
+  // re-run layout and tell the simulator inside it that its viewport changed, so panes
+  // that size themselves off the viewport settle at the new width.
+  function settleViewer() {
+    if (viewer.hidden) return;
+    void viewer.offsetWidth;
+    try {
+      viewer.contentWindow.dispatchEvent(new Event("resize"));
+    } catch (e) {
+      /* not loaded yet, or cross-origin: nothing to settle */
+    }
+  }
+
   sidebarToggle.addEventListener("click", () => {
     layout.classList.toggle("sidebar-collapsed");
     const isNowCollapsed = layout.classList.contains("sidebar-collapsed");
     localStorage.setItem("git-sim-sidebar-collapsed", isNowCollapsed);
     sidebarToggle.setAttribute("aria-expanded", !isNowCollapsed);
+    requestAnimationFrame(settleViewer);
   });
 
   themeToggle.addEventListener("click", () => {
