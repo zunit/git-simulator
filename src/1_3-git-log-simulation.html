@@ -15,6 +15,10 @@
   }
   #terminal-container {
     flex: 2;
+    /* Defensive: flex items default to min-width:auto, which floors them at min-content.
+       Long unbreakable output (commit SHAs under pre-wrap) could otherwise force this
+       pane wider than its share and squeeze the guide panel. */
+    min-width: 0;
     background-color: #121212;
     padding: 20px;
     font-family: 'Courier New', Courier, monospace;
@@ -24,12 +28,19 @@
   }
   #guide-container {
     flex: 1;
+    min-width: 0;
     background-color: #252526;
     padding: 30px;
     border-left: 2px solid #333;
     display: flex;
     flex-direction: column;
+    /* Plain "center" overflows a column flex container in BOTH directions, putting the
+       top of a tall card above scroll origin where overflow-y cannot reach it. "safe"
+       falls back to start alignment exactly when it would overflow. Keep both lines:
+       engines without "safe" support ignore the second and retain the first. */
     justify-content: center;
+    justify-content: safe center;
+    overflow-y: auto;
   }
   .prompt { color: #4af626; }
   .command-input {

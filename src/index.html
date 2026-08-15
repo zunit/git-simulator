@@ -141,7 +141,9 @@
     grid-template-columns: var(--sidebar-w) 1fr;
     height: 100%;
     gap: 0;
-    transition: grid-template-columns 0.25s ease;
+    /* Deliberately NOT transitioning grid-template-columns: animating it resizes the
+       viewer iframe on every frame for 250ms, re-laying out the simulator inside it
+       ~15 times per toggle. Collapse discretely instead. */
   }
 
   .layout.sidebar-collapsed .layout-content-area {
@@ -551,11 +553,25 @@
   const sidebarToggle = document.getElementById("sidebar-toggle");
   const themeToggle = document.getElementById("theme-toggle");
 
+  // The viewer iframe changes width when the sidebar collapses. Force the frame to
+  // re-run layout and tell the simulator inside it that its viewport changed, so panes
+  // that size themselves off the viewport settle at the new width.
+  function settleViewer() {
+    if (viewer.hidden) return;
+    void viewer.offsetWidth;
+    try {
+      viewer.contentWindow.dispatchEvent(new Event("resize"));
+    } catch (e) {
+      /* not loaded yet, or cross-origin: nothing to settle */
+    }
+  }
+
   sidebarToggle.addEventListener("click", () => {
     layout.classList.toggle("sidebar-collapsed");
     const isNowCollapsed = layout.classList.contains("sidebar-collapsed");
     localStorage.setItem("git-sim-sidebar-collapsed", isNowCollapsed);
     sidebarToggle.setAttribute("aria-expanded", !isNowCollapsed);
+    requestAnimationFrame(settleViewer);
   });
 
   themeToggle.addEventListener("click", () => {
