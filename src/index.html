@@ -53,6 +53,8 @@
     margin: 0;
     padding: 0;
     height: 100%;
+    /* The shell is exactly viewport-sized; only the iframe and the nav list scroll. */
+    overflow: hidden;
   }
 
   body {
@@ -72,8 +74,12 @@
     padding: 0.75rem 1rem;
     border-bottom: 1px solid var(--border-color);
     background: var(--surface-bg);
+    /* Keep in sync with .layout grid-template-rows */
     height: 56px;
     flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
     transition: background-color 0.25s ease;
   }
 
@@ -120,9 +126,12 @@
 
   .layout {
     display: grid;
+    /* Row 1 must match .top-bar height */
     grid-template-rows: 56px 1fr;
     grid-template-columns: 1fr;
     height: 100vh;
+    /* dvh tracks the collapsing mobile toolbar; vh above is the fallback */
+    height: 100dvh;
     gap: 0;
     transition: grid-template-rows 0.25s ease;
   }
@@ -149,7 +158,8 @@
     flex-direction: column;
     border-right: 1px solid var(--border-color);
     background: var(--surface-bg);
-    overflow-y: auto;
+    /* #nav-root is the single scroller here — don't nest a second one */
+    overflow: hidden;
     transition: background-color 0.25s ease;
   }
 
@@ -244,7 +254,9 @@
   .content {
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    /* 100% of the grid track, not 100vh — the track is already 100vh minus the top bar */
+    height: 100%;
+    min-height: 0;
     overflow: hidden;
   }
 
@@ -271,6 +283,8 @@
 
   #viewer {
     flex: 1;
+    /* An iframe is a replaced element; without this its min size is its intrinsic 150px */
+    min-height: 0;
     border: none;
     width: 100%;
     background: var(--content-bg);
@@ -364,6 +378,7 @@
 
     .sidebar {
       max-height: 35vh;
+      max-height: 35dvh;
       border-right: none;
       border-bottom: 1px solid var(--border-color);
     }
